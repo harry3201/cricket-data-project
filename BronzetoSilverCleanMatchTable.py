@@ -1,4 +1,8 @@
 # Databricks notebook source
+# /// script
+# [tool.databricks.environment]
+# environment_version = "5"
+# ///
 # DBTITLE 1,demo-ing
 # MAGIC %sql
 # MAGIC select *  from workspace.default.cricket_bronze_current_matches
@@ -12,11 +16,10 @@ from pyspark.sql.types import *
 
 # COMMAND ----------
 
-# DBTITLE 1,Reading bronze layer table
+# DBTITLE 1,Create a DataFrame from the JSON
 bronze_df=spark.table('workspace.default.cricket_bronze_current_matches')
 raw_json=bronze_df.select("raw_data").collect()[0]['raw_data']
 api_data=json.loads(raw_json)
-# DBTITLE 1,Create a DataFrame from the JSON
 matches=api_data.get("data",[])
 print("Total  Matches Found :" , len(matches))
 print(matches[0] if len(matches)>0 else "No matches found")
@@ -65,15 +68,6 @@ for match in matches:
     })
 
 print(f"Silver rows acquired: {len(silver_rows)}")
-
-# Create silver layer DataFrame
-silver_df = spark.createDataFrame(silver_rows)
-
-# Display sample data
-display(silver_df)
-
-# Write to silver layer table
-silver_df.write.mode("overwrite").saveAsTable("workspace.default.cricket_silver_matches")
 
 # COMMAND ----------
 

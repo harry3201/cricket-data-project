@@ -1,4 +1,8 @@
 # Databricks notebook source
+# /// script
+# [tool.databricks.environment]
+# environment_version = "5"
+# ///
 # DBTITLE 1,import libraries
 import requests
 import json
@@ -18,11 +22,39 @@ base_path='/Volumes/workspace/default/cricket_api_data_project'
 
 # DBTITLE 1,call cricket API
 API_KEY='effebc16-e060-4e5b-b5c5-014b583f1e3d'
-api_url=f"https://api.cricapi.com/v1/currentMatches?apikey={API_KEY}&offset=0"
-response = requests.get(api_url)
-response.raise_for_status()
-api_data=response.json()
-print(json.dumps(api_data,indent=2)[:2000])
+
+# Fetch multiple pages of matches
+all_matches = []
+offsets = [0, 25, 50, 75, 100]  # Fetch 5 pages
+
+for offset in offsets:
+    api_url = f"https://api.cricapi.com/v1/currentMatches?apikey={API_KEY}&offset={offset}"
+    try:
+        response = requests.get(api_url)
+        response.raise_for_status()
+        page_data = response.json()
+        
+        # Extract matches from this page
+        matches = page_data.get('data', [])
+        if matches:
+            all_matches.extend(matches)
+            print(f"Offset {offset}: Found {len(matches)} matches")
+        else:
+            print(f"Offset {offset}: No more matches found")
+            break  # Stop if no more matches
+    except Exception as e:
+        print(f"Error fetching offset {offset}: {e}")
+        break
+
+# Create combined API response
+api_data = {
+    'apikey': API_KEY,
+    'data': all_matches
+}
+
+print(f"\nTotal matches collected: {len(all_matches)}")
+print(f"\nSample match data:")
+print(json.dumps(all_matches[0] if all_matches else {}, indent=2)[:1000])
 
 
 # COMMAND ----------
